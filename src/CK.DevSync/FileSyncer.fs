@@ -43,3 +43,21 @@ let watch dirSrc dirDest =
     fsw.EnableRaisingEvents <- true
 
     { new System.IDisposable with member __.Dispose() = fsw.Dispose() }
+
+
+type BuildResult =
+    | IsWatching of IDisposable
+    | SourceDirectoryNotFound
+    | DestinationDirectoryNotFound
+
+
+let build dirSrc dirDest =
+    let trim (str: string) = str.TrimEnd('\\').TrimEnd('/');
+
+    let diSrc = DirectoryInfo(trim dirSrc);
+    let diDest = DirectoryInfo(trim dirDest);
+
+    match (diSrc.Exists), (diDest.Exists) with
+    | false, _   -> SourceDirectoryNotFound
+    | _, false   -> DestinationDirectoryNotFound
+    | true, true -> IsWatching (watch (diSrc.FullName) (diDest.FullName))

@@ -1,6 +1,7 @@
 ﻿open System
 open Argu
 open Arguments
+open FileSyncer
 
 
 [<EntryPoint>]
@@ -13,14 +14,24 @@ let main argv =
    
     printfn "Welcome To DevSync"
 
+    let mutable disposables = []
+
     for arg in arguments do
         match arg with
-        | Sync (src, dest) -> FileSyncer.watch src dest
-                              printfn "Now watching %s" src
-                              printfn "             -> %s" dest
+        | Sync (src, dest) -> match FileSyncer.build src dest with
+                              | SourceDirectoryNotFound -> printf "Source Directory %s Not Found" src
+                              | DestinationDirectoryNotFound -> printfn "Destination Directory %s Not Found" dest
+                              | IsWatching disposable -> printfn "Now watching %s" src
+                                                         printfn "             -> %s" dest
+                                                         disposables <- (disposable :: disposables)
+                                         
 
-    Console.ReadKey() |> ignore
+    while Console.ReadLine().ToLower() <> "exit" do ()
 
-    //handle.Dispose()
+    for x in disposables do
+        try
+            x.Dispose()
+        with
+        | x -> printfn "%A" x
 
     0
