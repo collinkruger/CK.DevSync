@@ -67,3 +67,42 @@ let wsWithErrorHandling (webSocket : WebSocket) (context: HttpContext) =
         
     return successOrError
    }
+
+type Message =
+    | FromServer of string
+    | FromClient of Opcode * ByteSegment * bool
+
+let genEmptyInbox () = MailboxProcessor<Message>.Start (fun _ -> async { () })
+
+let mutable inboxHandle = genEmptyInbox()
+
+let genInbox (ws:WebSocket) =
+    inboxHandle <- MailboxProcessor.Start (fun inbox -> async {
+        while true do
+            let! message = inbox.Receive()
+            match message with
+            | FromServer str ->            let! _ = ws.send Text (str |> System.Text.Encoding.ASCII.GetBytes |> ByteSegment) true
+                                           ()
+            | FromClient (op, seg, fin) -> inboxHandle <- genEmptyInbox()
+    })
+    inboxHandle
+
+let handleWebsocketConnection (ws: WebSocket) (context: HttpContext) =
+        let mutable loop = true
+
+        let inbox = genInbox ws
+
+        let timer = new System.Timers.Timer(50.)
+        timer.Elapsed.Add (fun _ -> inbox.Post (FromServer "hi"))
+        timer.Start()
+
+        socket {
+            while loop do
+                let! m = ws.read()
+                match m with
+                | Text, data, true -> inbox.Post (FromClient (Text, "Yo dog" |> System.Text.Encoding.ASCII.GetBytes |> ByteSegment, true))
+                | Ping, _ ,_ ->       inbox.Post (FromClient (Pong, ByteSegment.Empty, true))
+                | Close, _ ,_ ->      inbox.Post (FromClient (Close, ByteSegment.Empty, true))
+                                      loop <- false
+                | _ -> ()
+        }
