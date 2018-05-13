@@ -6,12 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Example.html" />
     <EmbeddedResource Include="Script.js" />
+    <EmbeddedResource Include="Example.html" />
+    <Compile Include="TutorialWebSocket.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
   <ItemGroup>
     <PackageReference Include="Suave" Version="2.4.0" />

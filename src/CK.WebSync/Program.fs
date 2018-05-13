@@ -22,6 +22,7 @@ let main argv =
     let exampleHTML = getResource "CK.WebSync.Example.html" assembly
 
     startWebServer defaultConfig (choose [ GET >=> path "/js" >=> Successful.OK js >=> setMimeType "application/javascript; charset=utf-8"
-                                           GET >=> path "/example" >=> Successful.OK exampleHTML >=> setMimeType "text/html; charset=utf-8" ])
+                                           GET >=> path "/example" >=> Successful.OK exampleHTML >=> setMimeType "text/html; charset=utf-8"
+                                           GET >=> path "/ws" >=> WebSocket.handShake (TutorialWebSocket.ws) ])
 
     0
