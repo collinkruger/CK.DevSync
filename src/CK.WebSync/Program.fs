@@ -1,18 +1,27 @@
-﻿// Learn more about F# at http://fsharp.org
-
-open System
-open System.Reflection
+﻿open System.Reflection
 open System.IO
+open Suave
+open Suave.Operators
+open Suave.Filters
+open Suave.Writers
+
+
+let getResource key (assembly: Assembly) =
+    use stream = assembly.GetManifestResourceStream(key)
+    use reader = new StreamReader(stream)
+    reader.ReadToEnd()
+
 
 [<EntryPoint>]
 let main argv =
-    printfn "Hello World from F#!"
+    printfn "Welcome To WebSync!"
 
-    use stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CK.WebSync.Script.js");
-    use reader = new StreamReader(stream)
+    let assembly = Assembly.GetExecutingAssembly()
 
-    Console.Write(reader.ReadToEnd())
+    let js = getResource "CK.WebSync.Script.js" assembly
+    let exampleHTML = getResource "CK.WebSync.Example.html" assembly
 
-    Console.ReadLine() |> ignore
+    startWebServer defaultConfig (choose [ GET >=> path "/js" >=> Successful.OK js >=> setMimeType "application/javascript; charset=utf-8"
+                                           GET >=> path "/example" >=> Successful.OK exampleHTML >=> setMimeType "text/html; charset=utf-8" ])
 
     0
